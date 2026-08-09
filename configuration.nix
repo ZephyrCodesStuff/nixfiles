@@ -98,6 +98,7 @@
 
   # --- AUDIO (PipeWire for low-latency DSP & screenshare audio) ---
   security.rtkit.enable = true;
+  hardware.pulseaudio.enable = false;
   services.pipewire = {
     enable = true;
     alsa.enable = true;
@@ -142,6 +143,7 @@
     maim            # Screenshot utility
     xclip           # Clipboard manager for maim/X11
     helium  	    # Helium browser (helium.computer)
+    firefox         # For everything Helium can't to (DRM)
     
     # Discord / Communication
     vesktop         # Optimized Discord client with working Wayland/X11 screenshare + audio
@@ -153,6 +155,11 @@
     cmake
     ninja
     docker-compose
+
+    # Audio utils
+    pavucontrol   # GUI volume control for PipeWire / Pulse
+    alsa-utils    # Provides alsamixer, amixer, speaker-test
+    pulsemixer    # Terminal UI volume mixer
   ];
 
   # Enable 32-bit graphics drivers (essential for RPCS3 / Wine / Vulkan testing)
@@ -168,5 +175,16 @@
     open = true;
 
     package = config.boot.kernelPackages.nvidiaPackages.stable;
+  };
+
+  hardware.bluetooth = {
+    enable = true;
+    powerOnBoot = true;
+  };
+  
+  # Patch AppImages to run with `appimage-run`
+  programs.appimage = {
+    enable = true;
+    binfmt = true;
   };
 }
