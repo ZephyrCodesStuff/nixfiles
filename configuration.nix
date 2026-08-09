@@ -1,4 +1,8 @@
 { config, pkgs, lib, inputs, ... }: {
+  imports = [
+    ./kvm.nix
+  ];
+
   # 0. Enable unfree drivers (for NVIDIA proprietary)
   nixpkgs.config.allowUnfree = true;
   nixpkgs.overlays = [
@@ -7,6 +11,8 @@
 
   # 1. Enforce systemd-native initrd (Replaces legacy initrd scripts)
   boot.initrd.systemd.enable = true;
+  boot.initrd.kernelModules = [ "nvidia" ];
+  boot.kernelModules = [ "nvidia" ];
 
   # 2. Configure LUKS2 Unlocking via systemd-cryptsetup
   boot.initrd.luks.devices."cryptroot" = {
@@ -25,6 +31,8 @@
 
   # 4. Enable TPM2 daemon in systemd
   security.tpm2.enable = true;
+  security.tpm2.pkcs11.enable = true;
+  security.tpm2.tctiEnvironment.enable = true;
 
   system.stateVersion = "26.11";
 
@@ -32,7 +40,7 @@
   users.users.zeph = {
     isNormalUser = true;
     description = "zeph";
-    extraGroups = [ "wheel" "networkmanager" "audio" "video" "input" "docker" ];
+    extraGroups = [ "wheel" "networkmanager" "audio" "video" "input" "docker" "libvirt" "kvm" "disk" ];
     shell = pkgs.fish;
   };
 
@@ -48,22 +56,25 @@
   programs.fish.enable = true;
 
   # --- GRAPHICAL ENVIRONMENT (i3 + Picom + Portals) ---
+  services.displayManager.defaultSession = "none+i3";
+  services.displayManager.autoLogin = {
+    enable = true;
+    user = "zeph";
+  };
+
   services.xserver = {
     enable = true;
-    layout = "gb"; # Adjust to your keyboard layout (e.g., "it")
+    xkb.layout = "gb"; # Adjust to your keyboard layout (e.g., "it")
+
     videoDrivers = [ "nvidia" ];
     
-    displayManager.defaultSession = "none+i3";
     displayManager.lightdm = {
       enable = true;
       greeters.slick.enable = true;
     };
-    displayManager.autoLogin = {
-      enable = true;
-      user = "zeph";
-    };
+    
     displayManager.setupCommands = ''
-      ${pkgs.xorg.xrandr}/bin/xrandr --output DP-0 --mode 1920x1080 --rate 144
+      ${pkgs.xrandr}/bin/xrandr --output DP-0 --mode 1920x1080 --rate 144
     '';
     
     desktopManager.xterm.enable = false;
@@ -98,7 +109,7 @@
 
   # --- AUDIO (PipeWire for low-latency DSP & screenshare audio) ---
   security.rtkit.enable = true;
-  hardware.pulseaudio.enable = false;
+  services.pulseaudio.enable = false;
   services.pipewire = {
     enable = true;
     alsa.enable = true;
@@ -130,6 +141,7 @@
     # Secure Boot utilities
     sbctl           # Secure Boot key manager
     tpm2-tools      # TPM2 inspection
+    swtpm
 
     # Core utilities
     git
@@ -171,8 +183,7 @@
   hardware.nvidia = {
     modesetting.enable = true;
     nvidiaSettings = true;
-
-    open = true;
+    open = false;
 
     package = config.boot.kernelPackages.nvidiaPackages.stable;
   };
