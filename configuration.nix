@@ -10,8 +10,12 @@
   ];
 
   # 1. Enforce systemd-native initrd (Replaces legacy initrd scripts)
-  boot.initrd.systemd.enable = true;
-  boot.initrd.kernelModules = [ "nvidia" ];
+  boot.initrd.systemd = {
+    enable = true;
+    storePaths = [ pkgs.tpm2-tss ];
+  };
+
+  boot.initrd.kernelModules = [ "nvidia" "tpm_tis" "tpm_crb" ];
   boot.kernelModules = [ "nvidia" ];
 
   # 2. Configure LUKS2 Unlocking via systemd-cryptsetup
@@ -164,8 +168,6 @@
     vscodium
     ccache
     gdb
-    cmake
-    ninja
     docker-compose
 
     # Audio utils
